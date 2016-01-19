@@ -1,11 +1,13 @@
 #!/bin/bash
 
-
-hash_list=hashlist.txt
-changeset=changeset.txt
-
-txtfile=$2/$hash_list
-cur=`pwd| sed -e "s|$2/||g"`
+device_name=$2
+if [ "$device_name" = "" ]; then
+	hash_list=hashlist.txt
+	changeset=changeset.txt
+else
+	hash_list=hashlist_$device_name.txt
+	changeset=changeset_$device_name.txt
+fi
 
 func_check_target()
 {
@@ -18,26 +20,27 @@ func_check_target()
 	fi
 }
 
-
 func_sub_changeset() {
 	func_check_target	
+	cur=`pwd| sed -e "s|$BASE_DIR/||g"`
+	_hash_list=$BASE_DIR/$hash_list
 
-	sta=`grep $cur: $txtfile | cut -d':' -f2`
+	sta=`grep $cur: $_hash_list | cut -d':' -f2`
 
 	if [ "$sta" = "" ]; then
-		echo =======================================================
+		echo -------------------------------------------------------
 		echo "$cur"
 		echo " ($REPO_PROJECT)"
-		echo =======================================================
+		echo -------------------------------------------------------
 		echo "  this is first release"
 		echo;
 	else
 		log=`git log --oneline --no-merges $sta..HEAD`
 		if [ ! -z "$log" ]; then
-			echo =======================================================
+			echo -------------------------------------------------------
 			echo "$cur"
 			echo " ($REPO_PROJECT)"
-			echo =======================================================
+			echo -------------------------------------------------------
 			echo "$log"
 			echo;
 		fi
@@ -47,24 +50,45 @@ func_sub_changeset() {
 
 func_sub_hash_list() {
 	func_check_target
+	cur=`pwd| sed -e "s|$BASE_DIR/||g"`
 	echo "$cur:`git log -1 --pretty=format:"%H"`"
 }
 
 func_changeset()
 {
-	cur=`pwd`
-	repo forall -c sh $cur/$0 --sub-changeset $cur | tee $changeset
+	export BASE_DIR=`pwd`
+	if [ -f $hash_list ]; then
+		echo ======================================================= |tee $changeset
+		if [ "$device_name" = "" ]; then
+			echo "changeset" | tee -a $changeset
+		else
+			echo "changeset for $device_name" | tee -a $changeset
+		fi
+		echo =======================================================| tee -a $changeset
+		repo forall -c sh $BASE_DIR/$0 --sub-changeset $device_name | tee -a $changeset
+	else
+		echo "$hash_list is not exist"
+	fi
+
+	echo output hashlist to $changeset
 }
 
 func_hash_list() {
-	cur=`pwd`
-	repo forall -c sh $cur/$0 --sub-hashlist $cur 2>&1 | tee $hash_list
+	export BASE_DIR=`pwd`
+	repo forall -c sh $BASE_DIR/$0 --sub-hashlist $device_name 2>&1 | tee $hash_list
+	echo;
+	echo output hashlist to $hash_list
 }
 
 func_usege() {
 	echo "usage is below:"
-	echo "  `basename $0` [-c|-l]"
+	echo "  `basename $0` -c|-l [\"device_name\"]"
+
+	exit 1
 }
+
+
+
 
 case "$1" in
   "-l" ) func_hash_list ;;
