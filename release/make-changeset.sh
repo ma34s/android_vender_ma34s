@@ -2,12 +2,14 @@
 
 device_name=$2
 if [ "$device_name" = "" ]; then
-	hash_list=hashlist.txt
+	hash_list=`dirname $0`/hashlist/hashlist.txt
 	changeset=changeset.txt
 else
-	hash_list=hashlist_$device_name.txt
+	hash_list=`dirname $0`/hashlist/$device_name.txt
 	changeset=changeset_$device_name.txt
 fi
+# `dirname $0`/hashlist
+
 
 func_check_target()
 {
@@ -23,7 +25,7 @@ func_check_target()
 func_sub_changeset() {
 	func_check_target	
 	cur=`pwd| sed -e "s|$BASE_DIR/||g"`
-	_hash_list=$BASE_DIR/$hash_list
+	_hash_list=$hash_list
 
 	sta=`grep $cur: $_hash_list | cut -d':' -f2`
 
@@ -60,9 +62,9 @@ func_changeset()
 	if [ -f $hash_list ]; then
 		echo ======================================================= |tee $changeset
 		if [ "$device_name" = "" ]; then
-			echo "changeset" | tee -a $changeset
+			echo "changeset (`date +%Y/%m/%d`)" | tee -a $changeset
 		else
-			echo "changeset for $device_name" | tee -a $changeset
+			echo "changeset for $device_name (`date +%Y/%m/%d`)" | tee -a $changeset
 		fi
 		echo =======================================================| tee -a $changeset
 		repo forall -c sh $BASE_DIR/$0 --sub-changeset $device_name | tee -a $changeset
